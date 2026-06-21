@@ -1,8 +1,15 @@
 from langchain_community.document_loaders import AsyncHtmlLoader
 from langchain_community.document_transformers import Html2TextTransformer
 from langchain_text_splitters import CharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from dotenv import load_dotenv
+
+
+import os
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
 
 def load_web_page(url: str):
     """
@@ -50,12 +57,12 @@ def split_documents(documents, chunk_size=1000, chunk_overlap=200, separator="\n
 
 def create_embedding_model():
     """
-    Create a HuggingFace embedding model for document chunks.
+    Create an OpenAI embedding model for document chunks.
     
     Returns:
-        HuggingFaceEmbeddings: An embedding model for the document chunks.
+        OpenAIEmbeddings: An embedding model for the document chunks.
     """
-    return HuggingFaceEmbeddings()
+    return OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=api_key)
 
 def create_vectorstore(chunks, embedding_model):
     """
@@ -63,7 +70,7 @@ def create_vectorstore(chunks, embedding_model):
 
     Args:
         chunks (list): A list of document chunks.
-        embedding_model (HuggingFaceEmbeddings): The embedding model to use.
+        embedding_model (OpenAIEmbeddings): The embedding model to use.
     
     Returns:
         FAISS: A FAISS vector store containing the document chunks and their embeddings.
@@ -92,6 +99,7 @@ def main():
     vectorstore = create_vectorstore(chunks, embedding_model)
     print(f"\nCreated vector store with {vectorstore.index.ntotal} chunks.")
 
+    vectorstore.save_local("faiss_index")
     query = "Who won the 2023 Cricket World Cup?"
     docs = vectorstore.similarity_search(query)
     print(f"\nFound {len(docs)} documents similar to the query: '{query}'")
